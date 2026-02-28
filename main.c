@@ -28,23 +28,53 @@ CResult_int_char foo(int i){
 }
 #endif
 
-int main()
+int main(void)
 {
-  CResult_int_char res = foo(2);
+  CResult_int_char res;
 
+  printf("foo(2)\n");
+  res= foo(2);
+
+  printf("manual\n");
   if (IS_OK(res)){
     printf("res: %d\n", OK_VAL(res));
   }else{
     printf("res: %s\n", ERR_VAL(res));
   }
 
+  #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+  printf("with full match\n");
+  FULL_MATCH(res, res_val, printf("res: %d\n", res_val);, printf("res: %s\n", res_val););
+
+  printf("with ok match\n");
+  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val););
+
+  printf("with err match\n");
+  ERR_MATCH(res, err_val, printf("res: %s\n", err_val););
+  #endif
+
+
+  printf("--------------------------\n");
+  printf("foo(5)\n");
   res = foo(5);
 
+  printf("manual\n");
   if (IS_OK(res)){
     printf("res: %d\n", OK_VAL(res));
   }else{
     printf("res: %s\n", ERR_VAL(res));
   }
+
+  #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+  printf("with full match\n");
+  FULL_MATCH(res, res_val, printf("res: %d\n", res_val);, printf("res: %s\n", res_val););
+
+  printf("with ok match\n");
+  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val););
+
+  printf("with err match\n");
+  ERR_MATCH(res, err_val, printf("res: %s\n", err_val););
+  #endif
 
   return 0;
 }
