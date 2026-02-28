@@ -3,17 +3,113 @@
 /*
  * Copyright (c) 2026 Alberto Damo. All Rights Reserved.
  *
- * It's a template base library (like template in C++ but though C macros) and it gives the users
- * the tools to create and manage `Result` types like in rust with also a pattern matching system.
- * 
- * The library works on every standard starting from C89 with some caveats:
- * In C89 some of the features are not available since they depend on features which are not
- * available in C89. The library still compiles and through `conditional guards` these features are 
- * removed from the compilation.
  *
- * Version is present in the header file and it's composed of two section:
- * - Major : new features or heavy refactoring, may brake backwards compatibility
- * - Minor : Fixes or minor refactoring, do not break  backwards compatibility
+ * It's a template-based library (like template in C++, but implemented through C macros) and it
+ * gives users the tools to create and manage `Result` types similar to those in `Rust`, including
+ * pattern matching.
+ * 
+ * The library works with every standard starting from C89 with some caveats:
+ * In C89, some features are unavailable because they were introduced in later standards.
+ * The library still compiles, and through `conditional guards` these features are 
+ * removed from compilation.
+ *
+ * The version is present in the header file and it's composed of two sections:
+ * - Major : new features or heavy refactoring, may break backwards compatibility
+ * - Minor : Fixes or minor refactoring, do not break backwards compatibility
+ *
+ *  It can be checked through the use of the following macros:
+ *  - _CRESULT_VERSION_MAJOR : major version of the library
+ *  - _CRESULT_VERSION_MINOR : minor version of the library
+ *  - _CRESULT_VERSION_ : full version of the library
+ *
+ *  Usage:
+ *
+ *  Defining a Result:
+ *    To use a Result, first you need to define one. To do that, you specialize the template
+ *    (`#define CRESULT_TEMPLATE(T_OK, T_ERR)`) in the following way;
+ *    
+ *    ```c
+ *    typedef TEMPLATE(int, char*) CResult_int_char;
+ *    typedef TEMPLATE(int, struct H{int a;}) CResult_int_custom_c;
+ *    ```
+ *    
+ *    - T_OK : It's the type for the result in case of success
+ *    - T_ERR : It's the type for the result in case of failure
+ *    
+ *    There is no real constraint on the type: they can be anything from pointers, to structs,
+ *    to primitive types.
+ *    
+ *    After a Result has been designed, it can be used freely in the code.
+ *
+ *  Returning a Result:
+ *    To use it on a function you just make the function return a Result type in this way:
+ *    ```c
+ *    #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+ *    RETURN(CResult_int_char) foo(int i){
+ *      if (i==2) {
+ *        return NEW_OK(CResult_int_char,1);
+ *      }else{
+ *        return NEW_ERR(CResult_int_char, "invalid value");
+ *      }
+ *    }
+ *    #else
+ *    CResult_int_char foo(int i){
+ *      CResult_int_char res = {0};
+ *    
+ *      if (i==2) {
+ *        SET_OK(res, 1);
+ *      }else{
+ *        SET_ERR(res, "invalid value");
+ *      }
+ *    
+ *      return res;
+ *    }
+ *    #endif
+ *    ```
+ *    
+ *    In this snippet of code, the function foo() returns a `CResult_int_char` with `Ok(1)` if i==2
+ *    and `Err("invalid value")` otherwise.
+ *    The `RETURN` macro enforces that the Result value cannot be ignored by applying the
+ *    `warn_unused_result` attribute to the function's return type. (Like in Rust)
+ *    
+ *    [IMPORTANT]
+ *    `NEW_OK` and `NEW_ERR` require at least C99. In case this is not possible you can do that
+ *    manually by using `SET_OK` and `SET_ERR` as in the example above.
+ * 
+ *  Consuming a Result
+ *    To inspect and use a Result type there are different approaches. They can be split into two
+ *    categories:
+ *    
+ *    - Manual
+ *    - Automatic
+ *    
+ *    Manual:
+ *      In the manual approach, the user is responsible for determining whether the Result value is
+ *      an `Ok()` or an `Err()` by using the command `IS_OK(self)`.
+ *      After that the user can access the data by using the following commands:
+ *      
+ *      - for Ok values: `OK_VAL(self)`
+ *      - for Err values: `ERR_VAL(self)`
+ *      
+ *      [IMPORTANT]
+ *      This approach works with any C standard starting from **C89**, assuming `__GNUC__`.
+ *    
+ *    Automatic:
+ *    In the automatic approach, the user can use a set of commands to pattern match the 
+ *    appropriate value and execute different expressions based on the context. Example below:
+ *    
+ *    ```c
+ *      #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+ *      printf("with full match\n");
+ *      FULL_MATCH(res, res_val, printf("res: %d\n", res_val), printf("res: %s\n", res_val));
+ *    
+ *      printf("with ok match\n");
+ *      OK_MATCH(res, ok_val, printf("res: %d\n", ok_val));
+ *    
+ *      printf("with err match\n");
+ *      ERR_MATCH(res, err_val, printf("res: %s\n", err_val));
+ *      #endif
+ *    ```
  */
 
 #if !defined(__GNUC__) && !defined(__clang__)
@@ -69,16 +165,16 @@ struct{                                                                         
 /*
  * Return a CResult type ,already defined, in case of failure:
  * @param T: Specialization Type of the CResult
- * @param ok_err: value of the error
+ * @param err_val: value of the error
  */
 #define CRESULT_NEW_ERR(T, err_val)     ((T) {._ok = false, .value._err_val= err_val})
 
 /*
- * Complete pattern match of a already defined specialized CResult:
- * @param self: instance of the specialized Cresult
+ * Complete pattern match of an already defined specialized CResult:
+ * @param self: instance of the specialized CResult
  * @param res_val: name of the result/error that can be used in the user expressions
- * @param ok_exp: expression executed if self represent a successfully result
- * @param err_exp: expression executed if self represent a failure error
+ * @param ok_exp: expression executed if self represents a successful result
+ * @param err_exp: expression executed if self represents a failure error
  */
 #define CRESULT_FULL_MATCH(self, res_val, ok_exp, err_exp)                                        \
   do{                                                                                             \
@@ -93,10 +189,10 @@ struct{                                                                         
   }while(0)
 
 /*
- * Partial pattern match which executes if the specialized CResult represent a successful value
- * @param self: instance of the specialized Cresult
+ * Partial pattern match that executes if the specialized CResult represents a successful value
+ * @param self: instance of the specialized CResult
  * @param ok_val: name of the result that can be used in the user expressions
- * @param ok_exp: expression executed if self represent a result
+ * @param ok_exp: expression executed if self represents a result
  */
 #define CRESULT_OK_MATCH(self, ok_val, ok_exp)                                                    \
   do{                                                                                             \
@@ -108,24 +204,24 @@ struct{                                                                         
   }while(0)
 
 /*
- * Partial pattern match which executes if the specialized CResult represent a failed error
- * @param self: instance of the specialized Cresult
+ * Partial pattern match that executes if the specialized CResult represents an error
+ * @param self: instance of the specialized CResult
  * @param err_val: name of the error that can be used in the user expressions
- * @param err_exp: expression executed if self represent an error 
+ * @param err_exp: expression executed if self represents an error 
  */
-#define CRESULT_ERR_MATCH(self, err_val, ok_exp)                                                  \
+#define CRESULT_ERR_MATCH(self, err_val, err_exp)                                                  \
   do{                                                                                             \
     const __typeof__((self)) c_self = (self);                                                     \
     if(!c_self._ok){                                                                              \
       __typeof__(c_self.value._err_val) err_val = c_self.value._err_val;                          \
-      do{(ok_exp);}while(0);                                                                      \
+      do{(err_exp);}while(0);                                                                      \
     }                                                                                             \
   }while(0)
 #endif
 
 /*
- * Set an existent specialized CResult as successful with a specific result
- * @param self: instance of the specialized Cresult
+ * Set an existing specialized CResult as successful with a specific result
+ * @param self: instance of the specialized CResult
  * @param ok_val: user value to set
  */
 #define CRESULT_SET_OK(self, ok_val)                                                              \
@@ -136,8 +232,8 @@ struct{                                                                         
   }while(0)
 
 /*
- * Set an existent specialized CResult as successful with a specific error
- * @param self: instance of the specialized Cresult
+ * Set an existing specialized CResult as failed with a specific error
+ * @param self: instance of the specialized CResult
  * @param err_val: user error to set
  */
 #define CRESULT_SET_ERR(self, err_val)                                                            \
@@ -148,41 +244,41 @@ struct{                                                                         
   }while(0)
 
 /*
- * Check if an existent specialized CResult has a value
- * @param self: instance of the specialized Cresult
+ * Check if an existing specialized CResult has a value
+ * @param self: instance of the specialized CResult
  * RETURN: true if self has a value, false otherwise
  */
 #define CRESULT_IS_OK(self)             ((self)._ok)
 
 /*
- * Check if an existent specialized CResult has an error
- * @param self: instance of the specialized Cresult
+ * Check if an existing specialized CResult has an error
+ * @param self: instance of the specialized CResult
  * RETURN: true if self has an error, false otherwise
  */
 #define CRESULT_IS_ERR(self)            (!(self)._ok)
 
 /*
- * UNCHECKED RETURN the value of an existent specialized CResult.
- * @param self: instance of the specialized Cresult
- * IF self has an error is UNDEFINED BEHAVIOUR
+ * UNCHECKED RETURN the value of an existing specialized CResult.
+ * @param self: instance of the specialized CResult
+ * IF self has an error, this results in UNDEFINED BEHAVIOUR
  */
 #define CRESULT_OK_VAL(self)            ((self).value._ok_val)
 
 /*
- * UNCHECKED RETURN the error of an existent specialized CResult.
- * @param self: instance of the specialized Cresult
- * IF self has a value is UNDEFINED BEHAVIOUR
+ * UNCHECKED RETURN the error of an existing specialized CResult.
+ * @param self: instance of the specialized CResult
+ * IF self has a value, this results in UNDEFINED BEHAVIOUR
  */
 #define CRESULT_ERR_VAL(self)           ((self).value._err_val)
 
 /*
  * Set the return type of a function to an already defined specialized CResult.
- * When set the return value of the function cannot be ignored.
+ * When set, the return value of the function cannot be ignored.
  */
 #define CRESULT_RETURN(self)            __attribute__((warn_unused_result)) self
 
 /*
- * Remove the namespace guard of the libraries
+ * Remove the namespace guard of the library
  */
 
 #ifdef CRESULT_NO_PREFIX
@@ -204,7 +300,7 @@ struct{                                                                         
 #define NEW_ERR(T, err_val)                             CRESULT_NEW_ERR(T, err_val)
 
 #define OK_MATCH(self, ok_val, ok_exp)                  CRESULT_OK_MATCH(self, ok_val, ok_exp)
-#define ERR_MATCH(self, err_val, ok_exp)                CRESULT_ERR_MATCH(self, err_val, ok_exp)
+#define ERR_MATCH(self, err_val, err_exp)                CRESULT_ERR_MATCH(self, err_val, err_exp)
 #define FULL_MATCH(self, res_val, ok_exp, err_exp) \
   CRESULT_FULL_MATCH(self, res_val, ok_exp, err_exp)
 #endif
