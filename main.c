@@ -3,11 +3,11 @@
 #define CRESULT_NO_PREFIX
 #include "Cresult.h"
 
-
 typedef TEMPLATE(int, char*) CResult_int_char;
+typedef TEMPLATE(int, struct H{int a;}) CResult_int_custom_c;
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-CResult_int_char foo(int i){
+static RETURN(CResult_int_char) foo(int i){
   if (i==2) {
     return NEW_OK(CResult_int_char,1);
   }else{
@@ -15,7 +15,7 @@ CResult_int_char foo(int i){
   }
 }
 #else
-CResult_int_char foo(int i){
+static RETURN(CResult_int_char) foo(int i){
   CResult_int_char res = {0};
 
   if (i==2) {
@@ -44,13 +44,13 @@ int main(void)
 
   #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
   printf("with full match\n");
-  FULL_MATCH(res, res_val, printf("res: %d\n", res_val);, printf("res: %s\n", res_val););
+  FULL_MATCH(res, res_val, printf("res: %d\n", res_val), printf("res: %s\n", res_val));
 
   printf("with ok match\n");
-  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val););
+  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val));
 
   printf("with err match\n");
-  ERR_MATCH(res, err_val, printf("res: %s\n", err_val););
+  ERR_MATCH(res, err_val, printf("res: %s\n", err_val));
   #endif
 
 
@@ -67,13 +67,13 @@ int main(void)
 
   #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
   printf("with full match\n");
-  FULL_MATCH(res, res_val, printf("res: %d\n", res_val);, printf("res: %s\n", res_val););
+  FULL_MATCH(res, res_val, printf("res: %d\n", res_val), printf("res: %s\n", res_val));
 
   printf("with ok match\n");
-  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val););
+  OK_MATCH(res, ok_val, printf("res: %d\n", ok_val));
 
   printf("with err match\n");
-  ERR_MATCH(res, err_val, printf("res: %s\n", err_val););
+  ERR_MATCH(res, err_val, printf("res: %s\n", err_val));
   #endif
 
   return 0;

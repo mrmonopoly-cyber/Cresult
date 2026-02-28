@@ -36,10 +36,10 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(c_self._ok){                                                                               \
       __typeof__(c_self.value._ok_val) res_val = c_self.value._ok_val;                            \
-      do{ok_exp}while(0);                                                                         \
+      do{(ok_exp);}while(0);                                                                         \
     }else{                                                                                        \
       __typeof__(c_self.value._err_val) res_val = c_self.value._err_val;                          \
-      do{err_exp}while(0);                                                                        \
+      do{(err_exp);}while(0);                                                                     \
     }                                                                                             \
   }while(0)
 
@@ -48,7 +48,7 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(c_self._ok){                                                                               \
       __typeof__(c_self.value._ok_val) ok_val = c_self.value._ok_val;                             \
-      do{ok_exp}while(0);                                                                         \
+      do{(ok_exp);}while(0);                                                                      \
     }                                                                                             \
   }while(0)
 
@@ -57,7 +57,7 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(!c_self._ok){                                                                              \
       __typeof__(c_self.value._err_val) err_val = c_self.value._err_val;                          \
-      do{ok_exp}while(0);                                                                         \
+      do{(ok_exp);}while(0);                                                                      \
     }                                                                                             \
   }while(0)
 #endif
@@ -82,6 +82,8 @@ struct{                                                                         
 #define CRESULT_OK_VAL(self)            ((self).value._ok_val)
 #define CRESULT_ERR_VAL(self)           ((self).value._err_val)
 
+#define CRESULT_RETURN(self)            __attribute__((warn_unused_result)) self
+
 #ifdef CRESULT_NO_PREFIX
 #define TEMPLATE(T_OK, T_ERR)                           CRESULT_TEMPLATE(T_OK, T_ERR)
 
@@ -93,6 +95,8 @@ struct{                                                                         
 
 #define OK_VAL(self)                                    CRESULT_OK_VAL(self)
 #define ERR_VAL(self)                                   CRESULT_ERR_VAL(self)
+
+#define RETURN(self)                                    CRESULT_RETURN(self)
 
 #if defined(CRESULT_C99)
 #define NEW_OK(T, ok_val)                               CRESULT_NEW_OK(T, ok_val)
