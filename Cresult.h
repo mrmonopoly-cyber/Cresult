@@ -1,5 +1,21 @@
 #pragma once
 
+/*
+ * Copyright (c) 2026 Alberto Damo. All Rights Reserved.
+ *
+ * It's a template base library (like template in C++ but though C macros) and it gives the users
+ * the tools to create and manage `Result` types like in rust with also a pattern matching system.
+ * 
+ * The library works on every standard starting from C89 with some caveats:
+ * In C89 some of the features are not available since they depend on features which are not
+ * available in C89. The library still compiles and through `conditional guards` these features are 
+ * removed from the compilation.
+ *
+ * Version is present in the header file and it's composed of two section:
+ * - Major : new features or heavy refactoring, may brake backwards compatibility
+ * - Minor : Fixes or minor refactoring, do not break  backwards compatibility
+ */
+
 #if !defined(__GNUC__) && !defined(__clang__)
 #error unsupported compiler
 #endif
@@ -18,6 +34,10 @@
 
 #define CRESULT_APPEND_RAW(x, y) x ## y
 #define CRESULT_APPEND_2(x, y) CRESULT_APPEND_RAW(x,y)
+
+#define _CRESULT_VERSION_MAJOR 01
+#define _CRESULT_VERSION_MINOR 00
+#define _CRESULT_VERSION_ CRESULT_APPEND_2(_CRESULT_VERSION_MAJOR,_CRESULT_VERSION_MINOR)
 
 /*
  * Template definition of a CResult type.
