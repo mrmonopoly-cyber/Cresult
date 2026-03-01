@@ -5,7 +5,7 @@ OUT := main
 INCLUDE := -I../
 
 build: $(SRC)
-	cc -Wall -Wextra -std=$(STD) $(INCLUDE) -pedantic $(SRC) -o $(OUT)
+	cc -Wall -Wextra -std=$(STD) $(INCLUDE) $(SRC) -o $(OUT)
 
 clean: 
 	rm -f $(OUT)

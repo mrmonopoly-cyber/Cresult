@@ -45,11 +45,11 @@
  *    To use it on a function you just make the function return a Result type in this way:
  *    ```c
  *    #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
- *    RETURN(CResult_int_char) foo(int i){
+ *    RETURN_TYPE(CResult_int_char) foo(int i){
  *      if (i==2) {
- *        return NEW_OK(CResult_int_char,1);
+ *        return T_OK(CResult_int_char,1);
  *      }else{
- *        return NEW_ERR(CResult_int_char, "invalid value");
+ *        return T_ERR(CResult_int_char, "invalid value");
  *      }
  *    }
  *    #else
@@ -69,11 +69,11 @@
  *    
  *    In this snippet of code, the function foo() returns a `CResult_int_char` with `Ok(1)` if i==2
  *    and `Err("invalid value")` otherwise.
- *    The `RETURN` macro enforces that the Result value cannot be ignored by applying the
+ *    The `RETURN_TYPE` macro enforces that the Result value cannot be ignored by applying the
  *    `warn_unused_result` attribute to the function's return type. (Like in Rust)
  *    
  *    [IMPORTANT]
- *    `NEW_OK` and `NEW_ERR` require at least C99. In case this is not possible you can do that
+ *    `T_OK` and `T_ERR` require at least C99. In case this is not possible you can do that
  *    manually by using `SET_OK` and `SET_ERR` as in the example above.
  * 
  *  Consuming a Result
@@ -91,15 +91,11 @@
  *      - for Ok values: `OK_VAL(self)`
  *      - for Err values: `ERR_VAL(self)`
  *      
- *      [IMPORTANT]
- *      This approach works with any C standard starting from **C89**, assuming `__GNUC__`.
- *    
  *    Automatic:
  *    In the automatic approach, the user can use a set of commands to pattern match the 
  *    appropriate value and execute different expressions based on the context. Example below:
  *    
  *    ```c
- *      #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
  *      printf("with full match\n");
  *      FULL_MATCH(res, res_val, printf("res: %d\n", res_val), printf("res: %s\n", res_val));
  *    
@@ -108,7 +104,6 @@
  *    
  *      printf("with err match\n");
  *      ERR_MATCH(res, err_val, printf("res: %s\n", err_val));
- *      #endif
  *    ```
  */
 
@@ -131,7 +126,7 @@
 #define CRESULT_APPEND_RAW(x, y) x ## y
 #define CRESULT_APPEND_2(x, y) CRESULT_APPEND_RAW(x,y)
 
-#define _CRESULT_VERSION_MAJOR 01
+#define _CRESULT_VERSION_MAJOR 02
 #define _CRESULT_VERSION_MINOR 00
 #define _CRESULT_VERSION_ CRESULT_APPEND_2(_CRESULT_VERSION_MAJOR,_CRESULT_VERSION_MINOR)
 
@@ -160,14 +155,15 @@ struct{                                                                         
  * @param T: Specialization Type of the CResult
  * @param ok_val: value of the result
  */
-#define CRESULT_NEW_OK(T, ok_val)       ((T) {._ok = true, .value._ok_val = ok_val})
+#define CRESULT_T_OK(T, ok_val)       ((const T) {._ok = true, .value._ok_val = ok_val})
 
 /*
  * Return a CResult type ,already defined, in case of failure:
  * @param T: Specialization Type of the CResult
  * @param err_val: value of the error
  */
-#define CRESULT_NEW_ERR(T, err_val)     ((T) {._ok = false, .value._err_val= err_val})
+#define CRESULT_T_ERR(T, err_val)     ((const T) {._ok = false, .value._err_val= err_val})
+#endif
 
 /*
  * Complete pattern match of an already defined specialized CResult:
@@ -181,12 +177,13 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(c_self._ok){                                                                               \
       __typeof__(c_self.value._ok_val) res_val = c_self.value._ok_val;                            \
-      do{(ok_exp);}while(0);                                                                         \
+      do{(ok_exp);}while(0);                                                                      \
     }else{                                                                                        \
       __typeof__(c_self.value._err_val) res_val = c_self.value._err_val;                          \
       do{(err_exp);}while(0);                                                                     \
     }                                                                                             \
   }while(0)
+
 
 /*
  * Partial pattern match that executes if the specialized CResult represents a successful value
@@ -209,15 +206,14 @@ struct{                                                                         
  * @param err_val: name of the error that can be used in the user expressions
  * @param err_exp: expression executed if self represents an error 
  */
-#define CRESULT_ERR_MATCH(self, err_val, err_exp)                                                  \
+#define CRESULT_ERR_MATCH(self, err_val, err_exp)                                                 \
   do{                                                                                             \
     const __typeof__((self)) c_self = (self);                                                     \
     if(!c_self._ok){                                                                              \
       __typeof__(c_self.value._err_val) err_val = c_self.value._err_val;                          \
-      do{(err_exp);}while(0);                                                                      \
+      do{(err_exp);}while(0);                                                                     \
     }                                                                                             \
   }while(0)
-#endif
 
 /*
  * Set an existing specialized CResult as successful with a specific result
@@ -246,30 +242,47 @@ struct{                                                                         
 /*
  * Check if an existing specialized CResult has a value
  * @param self: instance of the specialized CResult
- * RETURN: true if self has a value, false otherwise
+ * RETURN_TYPE: true if self has a value, false otherwise
  */
 #define CRESULT_IS_OK(self)             ((self)._ok)
 
 /*
  * Check if an existing specialized CResult has an error
  * @param self: instance of the specialized CResult
- * RETURN: true if self has an error, false otherwise
+ * RETURN_TYPE: true if self has an error, false otherwise
  */
 #define CRESULT_IS_ERR(self)            (!(self)._ok)
 
 /*
- * UNCHECKED RETURN the value of an existing specialized CResult.
+ * UNCHECKED RETURN_TYPE the value of an existing specialized CResult.
  * @param self: instance of the specialized CResult
  * IF self has an error, this results in UNDEFINED BEHAVIOUR
  */
 #define CRESULT_OK_VAL(self)            ((self).value._ok_val)
 
 /*
- * UNCHECKED RETURN the error of an existing specialized CResult.
+ * UNCHECKED RETURN_TYPE the error of an existing specialized CResult.
  * @param self: instance of the specialized CResult
  * IF self has a value, this results in UNDEFINED BEHAVIOUR
  */
 #define CRESULT_ERR_VAL(self)           ((self).value._err_val)
+
+/*
+ * TRY the function and checks its return value by evaluating the function once.
+ * If the return value is Specialization of CResult it will compile otherwise it won't.
+ * If the return value is Ok(x) then the value in the Result is returned to the user.
+ * If the return value is Err(x) then Err(x) is returned;
+ *
+ * @param exp: function to evaluate
+ */
+#define CRESULT_TRY(fun)                                                                          \
+     ({                                                                                           \
+      __typeof__ ((fun)) __tmp_res__ = (fun);                                                     \
+      if(!CRESULT_IS_OK(__tmp_res__)){                                                            \
+        return __tmp_res__;                                                                       \
+      }                                                                                           \
+      CRESULT_OK_VAL(__tmp_res__);                                                                \
+     })
 
 /*
  * Set the return type of a function to an already defined specialized CResult.
@@ -293,16 +306,17 @@ struct{                                                                         
 #define OK_VAL(self)                                    CRESULT_OK_VAL(self)
 #define ERR_VAL(self)                                   CRESULT_ERR_VAL(self)
 
-#define RETURN(self)                                    CRESULT_RETURN(self)
+#define TRY(exp)                                        CRESULT_TRY(exp)
+#define RETURN_TYPE(self)                                    CRESULT_RETURN(self)
 
-#if defined(CRESULT_C99)
-#define NEW_OK(T, ok_val)                               CRESULT_NEW_OK(T, ok_val)
-#define NEW_ERR(T, err_val)                             CRESULT_NEW_ERR(T, err_val)
+#define FULL_MATCH(self, res_val, ok_exp, err_exp)      CRESULT_FULL_MATCH(self, res_val, ok_exp, err_exp)
 
 #define OK_MATCH(self, ok_val, ok_exp)                  CRESULT_OK_MATCH(self, ok_val, ok_exp)
-#define ERR_MATCH(self, err_val, err_exp)                CRESULT_ERR_MATCH(self, err_val, err_exp)
-#define FULL_MATCH(self, res_val, ok_exp, err_exp) \
-  CRESULT_FULL_MATCH(self, res_val, ok_exp, err_exp)
+#define ERR_MATCH(self, err_val, err_exp)               CRESULT_ERR_MATCH(self, err_val, err_exp)
+
+#if defined(CRESULT_C99)
+#define T_OK(T, ok_val)                                 CRESULT_T_OK(T, ok_val)
+#define T_ERR(T, err_val)                               CRESULT_T_ERR(T, err_val)
 #endif
 
 #endif /* CRESULT_NO_PREFIX */

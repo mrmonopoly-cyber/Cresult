@@ -184,16 +184,12 @@ After that the user can access the data by using the following commands:
 - for Ok values: `OK_VAL(self)`
 - for Err values: `ERR_VAL(self)`
 
-> [!IMPORTANT]
-> This approach works with any C standard starting from **C89**, assuming `__GNUC__`.
-
 #### Automatic
 
 In the automatic approach, the user can use a set of commands to pattern match the appropriate
 value and execute different expressions based on the context. Example below:
 
 ```c
-  #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
   printf("with full match\n");
   FULL_MATCH(res, res_val, printf("res: %d\n", res_val), printf("res: %s\n", res_val));
 
@@ -202,8 +198,4 @@ value and execute different expressions based on the context. Example below:
 
   printf("with err match\n");
   ERR_MATCH(res, err_val, printf("res: %s\n", err_val));
-  #endif
 ```
-
-> [!IMPORTANT]
-> This approach works with any C standard starting from **C99**, assuming `__GNUC__`.
