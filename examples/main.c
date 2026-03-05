@@ -15,6 +15,7 @@ static RETURN_TYPE(CResult_int_char) foo(int i){
   }else{
     return T_ERR(CResult_int_char,"invalid value");
   }
+  #undef OK
 }
 #else
 static RETURN_TYPE(CResult_int_char) foo(int i){
