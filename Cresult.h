@@ -248,7 +248,7 @@
 #define CRESULT_APPEND_2(x, y) CRESULT_APPEND_RAW(x,y)
 
 #define _CRESULT_VERSION_MAJOR 02
-#define _CRESULT_VERSION_MINOR 00
+#define _CRESULT_VERSION_MINOR 01
 #define _CRESULT_VERSION_ CRESULT_APPEND_2(_CRESULT_VERSION_MAJOR,_CRESULT_VERSION_MINOR)
 
 /*
@@ -317,7 +317,7 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(c_self._ok){                                                                               \
       __typeof__(c_self.value._ok_val) ok_val = c_self.value._ok_val;                             \
-      do{(ok_exp);}while(0);                                                                      \
+      do{ok_exp;}while(0);                                                                      \
     }                                                                                             \
   }while(0)
 
@@ -332,7 +332,7 @@ struct{                                                                         
     const __typeof__((self)) c_self = (self);                                                     \
     if(!c_self._ok){                                                                              \
       __typeof__(c_self.value._err_val) err_val = c_self.value._err_val;                          \
-      do{(err_exp);}while(0);                                                                     \
+      do{err_exp;}while(0);                                                                     \
     }                                                                                             \
   }while(0)
 
@@ -409,7 +409,7 @@ struct{                                                                         
  * Set the return type of a function to an already defined specialized CResult.
  * When set, the return value of the function cannot be ignored.
  */
-#define CRESULT_RETURN(self)            __attribute__((warn_unused_result)) self
+#define CRESULT_RETURN_TYPE(self)            __attribute__((warn_unused_result)) self
 
 /*
  * Remove the namespace guard of the library
@@ -428,7 +428,7 @@ struct{                                                                         
 #define ERR_VAL(self)                                   CRESULT_ERR_VAL(self)
 
 #define TRY(exp)                                        CRESULT_TRY(exp)
-#define RETURN_TYPE(self)                                    CRESULT_RETURN(self)
+#define RETURN_TYPE(self)                               CRESULT_RETURN_TYPE(self)
 
 #define FULL_MATCH(self, res_val, ok_exp, err_exp)      CRESULT_FULL_MATCH(self, res_val, ok_exp, err_exp)
 
